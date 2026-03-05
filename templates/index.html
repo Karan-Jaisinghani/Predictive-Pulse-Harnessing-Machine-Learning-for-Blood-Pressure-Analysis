@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Pulse — Hypertension Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #060b14;
+    --surface:   #0d1526;
+    --surface2:  #111d35;
+    --border:    rgba(99,148,255,0.12);
+    --border2:   rgba(99,148,255,0.22);
+    --accent:    #4f8eff;
+    --accent2:   #7eb3ff;
+    --teal:      #00d4b4;
+    --pulse:     #ff4d6d;
+    --text:      #e8eeff;
+    --muted:     #6b82a8;
+    --dim:       #3a4d6b;
+    --ok:        #10B981;
+    --warn:      #F59E0B;
+    --danger:    #F97316;
+    --critical:  #EF4444;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --r:         12px;
+    --r2:        20px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.5;
+  }
+
+  /* ─── ANIMATED BG BLOBS ─── */
+  .bg-blobs {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .blob {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.07;
+    animation: blobDrift 20s ease-in-out infinite alternate;
+  }
+  .blob-1 { width: 600px; height: 600px; top: -200px; left: -200px; background: var(--accent); animation-delay: 0s; }
+  .blob-2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: var(--teal); animation-delay: -7s; }
+  .blob-3 { width: 300px; height: 300px; top: 40%; left: 50%; background: var(--pulse); animation-delay: -14s; }
+
+  @keyframes blobDrift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(40px, 30px) scale(1.1); }
+  }
+
+  /* ─── LAYOUT ─── */
+  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ─── HEADER ─── */
+  header {
+    padding: 28px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 52px;
+  }
+  .header-inner { display: flex; align-items: center; justify-content: space-between; }
+
+  .logo {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .logo-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 0 24px rgba(79,142,255,0.35);
+  }
+  .logo-text { font-family: var(--font-head); font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .logo-text span { color: var(--accent2); }
+
+  .badge-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 999px;
+    border: 1px solid var(--border2);
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ─── HERO ─── */
+  .hero { margin-bottom: 56px; }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px;
+    background: rgba(79,142,255,0.08); border: 1px solid rgba(79,142,255,0.2);
+    font-size: 12px; color: var(--accent2); font-family: var(--font-mono); letter-spacing: 0.05em;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: var(--font-head); font-size: clamp(32px, 5vw, 52px); font-weight: 800;
+    line-height: 1.08; letter-spacing: -0.03em;
+    margin-bottom: 18px;
+  }
+  h1 .hl { 
+    background: linear-gradient(90deg, var(--accent), var(--teal));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-sub { font-size: 17px; color: var(--muted); max-width: 560px; line-height: 1.65; }
+
+  .stats-row {
+    display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap;
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-num { font-family: var(--font-head); font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ─── ECG LINE ─── */
+  .ecg-wrap { margin: 48px 0; overflow: hidden; }
+  .ecg-svg { width: 100%; height: 56px; }
+  .ecg-path {
+    fill: none; stroke: var(--accent); stroke-width: 2; opacity: 0.4;
+    stroke-dasharray: 1200; stroke-dashoffset: 1200;
+    animation: drawECG 3s ease forwards;
+  }
+  @keyframes drawECG { to { stroke-dashoffset: 0; } }
+
+  /* ─── MAIN CARD ─── */
+  .main-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r2);
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,148,255,0.05);
+    margin-bottom: 40px;
+    animation: slideUp 0.6s ease both;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(32px); } }
+
+  .card-header {
+    padding: 28px 36px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(180deg, rgba(79,142,255,0.04) 0%, transparent 100%);
+  }
+  .card-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; }
+  .card-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .step-indicator { display: flex; gap: 8px; align-items: center; }
+  .step { width: 28px; height: 4px; border-radius: 2px; background: var(--dim); transition: background 0.3s; }
+  .step.active { background: var(--accent); }
+  .step.done { background: var(--teal); }
+
+  /* ─── FORM SECTIONS ─── */
+  .form-body { padding: 36px; }
+
+  .section-block {
+    margin-bottom: 40px;
+    animation: fadeIn 0.4s ease both;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } }
+  .section-block:nth-child(2) { animation-delay: 0.08s; }
+  .section-block:nth-child(3) { animation-delay: 0.16s; }
+  .section-block:nth-child(4) { animation-delay: 0.24s; }
+  .section-block:nth-child(5) { animation-delay: 0.32s; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-head); font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent2);
+    margin-bottom: 20px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-label-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: rgba(79,142,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+
+  .fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  label { font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0.01em; }
+  label .req { color: var(--pulse); margin-left: 2px; }
+
+  select, input {
+    appearance: none; width: 100%; padding: 11px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    color: var(--text);
+    font-family: var(--font-body); font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  select { background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b82a8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+  select:focus, input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,142,255,0.15); background: rgba(79,142,255,0.04); }
+  select:hover, input:hover { border-color: var(--border2); }
+  select option { background: #0d1526; }
+
+  /* ─── RADIO TOGGLE GROUPS ─── */
+  .toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle-opt { position: relative; flex: 1; min-width: 70px; }
+  .toggle-opt input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle-opt label {
+    display: flex; align-items: center; justify-content: center;
+    padding: 10px 14px; border-radius: var(--r);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: all 0.2s; text-align: center;
+    letter-spacing: normal;
+  }
+  .toggle-opt input[type="radio"]:checked + label {
+    background: rgba(79,142,255,0.15);
+    border-color: var(--accent);
+    color: var(--accent2);
+    box-shadow: 0 0 0 1px rgba(79,142,255,0.3);
+  }
+  .toggle-opt label:hover { border-color: var(--border2); color: var(--text); }
+
+  /* Severity colors */
+  .sev-mild input:checked + label { background: rgba(16,185,129,0.12); border-color: var(--ok); color: var(--ok); box-shadow: 0 0 0 1px rgba(16,185,129,0.3); }
+  .sev-moderate input:checked + label { background: rgba(245,158,11,0.12); border-color: var(--warn); color: var(--warn); box-shadow: 0 0 0 1px rgba(245,158,11,0.3); }
+  .sev-severe input:checked + label { background: rgba(239,68,68,0.12); border-color: var(--critical); color: var(--critical); box-shadow: 0 0 0 1px rgba(239,68,68,0.3); }
+
+  /* ─── SUBMIT ─── */
+  .form-footer {
+    padding: 28px 36px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+    background: linear-gradient(0deg, rgba(79,142,255,0.03) 0%, transparent 100%);
+  }
+  .footer-note { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 6px; max-width: 360px; line-height: 1.5; }
+
+  .btn-predict {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 32px; border-radius: var(--r);
+    background: linear-gradient(135deg, var(--accent), #2563eb);
+    border: none; color: #fff; font-family: var(--font-head);
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 8px 24px rgba(79,142,255,0.3);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .btn-predict:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(79,142,255,0.45); }
+  .btn-predict:active { transform: translateY(0); }
+  .btn-predict:disabled { opacity: 0.6; pointer-events: none; }
+  .btn-icon { font-size: 18px; }
+
+  /* ─── LOADING STATE ─── */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0; z-index: 100;
+    background: rgba(6,11,20,0.85); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center; flex-direction: column; gap: 20px;
+  }
+  .loading-overlay.active { display: flex; }
+  .loader {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { font-family: var(--font-head); font-size: 16px; color: var(--muted); }
+
+  /* ─── RESULT PANEL ─── */
+  #result-section { display: none; margin-top: 40px; }
+  #result-section.visible { display: block; animation: slideUp 0.5s ease; }
+
+  .result-card {
+    border-radius: var(--r2); overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+  }
+
+  .result-header {
+    padding: 36px; position: relative; overflow: hidden;
+  }
+  .result-header::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--res-color, var(--accent)) 0%, transparent 60%);
+    opacity: 0.12;
+  }
+  .result-header::after {
+    content: ''; position: absolute; top: -80px; right: -80px;
+    width: 280px; height: 280px; border-radius: 50%;
+    background: var(--res-color, var(--accent));
+    opacity: 0.06; filter: blur(40px);
+  }
+
+  .result-stage-icon { font-size: 48px; margin-bottom: 16px; display: block; position: relative; z-index: 1; }
+  .result-label {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px; position: relative; z-index: 1;
+  }
+  .result-stage-name {
+    font-family: var(--font-head); font-size: clamp(22px, 4vw, 34px);
+    font-weight: 800; line-height: 1.1; letter-spacing: -0.02em;
+    color: var(--res-color, var(--text)); position: relative; z-index: 1;
+    margin-bottom: 8px;
+  }
+  .result-subtitle { font-size: 15px; color: var(--muted); position: relative; z-index: 1; max-width: 500px; }
+
+  .result-metrics {
+    display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap; position: relative; z-index: 1;
+  }
+  .metric-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 18px; border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .metric-icon { font-size: 15px; }
+  .metric-val { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
+  .metric-lbl { font-size: 12px; color: var(--muted); }
+
+  /* Confidence arc */
+  .confidence-arc {
+    position: relative; width: 80px; height: 80px;
+  }
+  .arc-svg { transform: rotate(-90deg); }
+  .arc-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 6; }
+  .arc-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+  .arc-label {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .arc-pct { font-family: var(--font-head); font-size: 15px; font-weight: 700; }
+  .arc-sub { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* Result body */
+  .result-body { background: var(--surface); padding: 36px; }
+
+  .rec-title {
+    font-family: var(--font-head); font-size: 15px; font-weight: 700;
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .rec-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .rec-list li {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; border-radius: var(--r);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 14px; line-height: 1.5;
+    transition: border-color 0.2s;
+    animation: fadeIn 0.4s ease both;
+  }
+  .rec-list li:hover { border-color: var(--border2); }
+  .rec-list li::before {
+    content: '→'; color: var(--res-color, var(--accent));
+    font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* risk tag */
+  .risk-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 999px;
+    background: color-mix(in srgb, var(--res-color, var(--accent)) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--res-color, var(--accent)) 30%, transparent);
+    font-size: 12px; font-weight: 600; font-family: var(--font-mono);
+    color: var(--res-color, var(--accent));
+    letter-spacing: 0.05em; text-transform: uppercase;
+    margin-left: 12px;
+  }
+
+  /* Reset button */
+  .btn-reset {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 24px; padding: 11px 24px; border-radius: var(--r);
+    background: transparent; border: 1px solid var(--border2);
+    color: var(--muted); font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent2); background: rgba(79,142,255,0.05); }
+
+  /* ─── ERROR TOAST ─── */
+  .toast {
+    position: fixed; top: 24px; right: 24px; z-index: 200;
+    padding: 14px 20px; border-radius: var(--r);
+    background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35);
+    color: #fca5a5; font-size: 14px; max-width: 380px;
+    display: none; align-items: center; gap: 10px;
+    backdrop-filter: blur(12px);
+    animation: toastIn 0.3s ease;
+  }
+  .toast.show { display: flex; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(24px); } }
+
+  /* ─── FOOTER ─── */
+  footer {
+    margin-top: 80px; padding: 32px 0; border-top: 1px solid var(--border);
+    text-align: center; font-size: 12px; color: var(--dim); line-height: 1.8;
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--accent2); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 640px) {
+    .card-header, .form-body, .form-footer, .result-header, .result-body { padding: 24px; }
+    .header-inner { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .stats-row { gap: 20px; }
+    .fields-grid { grid-template-columns: 1fr; }
+    .form-footer { flex-direction: column; align-items: stretch; }
+    .btn-predict { justify-content: center; }
+  }
+
+  /* Stagger field animations */
+  .field:nth-child(1) { animation-delay: 0.05s; }
+  .field:nth-child(2) { animation-delay: 0.1s; }
+  .field:nth-child(3) { animation-delay: 0.15s; }
+  .field:nth-child(4) { animation-delay: 0.2s; }
+  .field { animation: fadeIn 0.4s ease both; }
+</style>
+</head>
+<body>
+
+<div class="bg-blobs">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loader"></div>
+  <div class="loader-text">Analyzing patient data…</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">⚠️ <span id="toastMsg"></span></div>
+
+<div class="wrapper">
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🫀</div>
+        <div class="logo-text">Predictive<span>Pulse</span></div>
+      </div>
+      <div class="badge-bar">
+        <div class="badge"><div class="badge-dot"></div> ML Powered</div>
+        <div class="badge">🔒 HIPAA-Aware</div>
+        <div class="badge">v2.0</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">🧬 MACHINE LEARNING · HYPERTENSION INTELLIGENCE</div>
+    <h1>Predict Blood Pressure<br><span class="hl">Stages with Precision</span></h1>
+    <p class="hero-sub">Advanced supervised learning models analyze 13 clinical parameters — demographics, vitals, symptoms, and lifestyle — to classify hypertension risk and provide personalised guidance.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num">1,825</div><div class="stat-label">Patient Records</div></div>
+      <div class="stat"><div class="stat-num">7</div><div class="stat-label">ML Algorithms</div></div>
+      <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Model Accuracy</div></div>
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Risk Stages</div></div>
+    </div>
+  </section>
+
+  <!-- ECG Decoration -->
+  <div class="ecg-wrap" aria-hidden="true">
+    <svg class="ecg-svg" viewBox="0 0 1000 56" preserveAspectRatio="none">
+      <path class="ecg-path" d="M0,28 L60,28 L80,28 L90,8 L100,48 L110,4 L120,52 L130,28 L150,28 L210,28 L230,28 L240,8 L250,48 L260,4 L270,52 L280,28 L300,28 L360,28 L380,28 L390,8 L400,48 L410,4 L420,52 L430,28 L450,28 L510,28 L530,28 L540,8 L550,48 L560,4 L570,52 L580,28 L600,28 L660,28 L680,28 L690,8 L700,48 L710,4 L720,52 L730,28 L750,28 L810,28 L830,28 L840,8 L850,48 L860,4 L870,52 L880,28 L900,28 L1000,28"/>
+    </svg>
+  </div>
+
+  <!-- MAIN FORM CARD -->
+  <div class="main-card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Patient Assessment Form</div>
+        <div class="card-subtitle">Complete all fields for accurate hypertension stage prediction</div>
+      </div>
+      <div class="step-indicator" id="stepIndicator">
+        <div class="step active" title="Demographics"></div>
+        <div class="step" title="Medical History"></div>
+        <div class="step" title="Symptoms"></div>
+        <div class="step" title="Vitals"></div>
+        <div class="step" title="Lifestyle"></div>
+      </div>
+    </div>
+
+    <form class="form-body" id="predForm">
+
+      <!-- 1. Demographics -->
+      <div class="section-block" id="sec1">
+        <div class="section-label">
+          <div class="section-label-icon">👤</div>
+          Demographics
+        </div>
+        <div class="fields-grid">
+          <div class="field">
+            <label>Gender <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt">
+                <input type="radio" name="Gender" id="gm" value="Male">
+                <label for="gm">♂ Male</label>
+              </div>
+              <div class="toggle-opt">
+                <input type="radio" name="Gender" id="gf" value="Female">
+                <label for="gf">♀ Female</label>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="Age">Age Group <span class="req">*</span></label>
+            <select name="Age" id="Age" required>
+              <option value="">Select age range</option>
+              <option value="18-34">18 – 34 years</option>
+              <option value="35-50">35 – 50 years</option>
+              <option value="51-64">51 – 64 years</option>
+              <option value="65+">65+ years</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Medical History -->
+      <div class="section-block" id="sec2">
+        <div class="section-label">
+          <div class="section-label-icon">📋</div>
+          Medical History
+        </div>
+        <div class="fields-grid">
+          <div class="field">
+            <label>Family History of Hypertension <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="History" id="hyes" value="Yes"><label for="hyes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="History" id="hno" value="No"><label for="hno">No</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Current Patient Status <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="Patient" id="pyes" value="Yes"><label for="pyes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="Patient" id="pno" value="No"><label for="pno">No</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Taking Medication <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="TakeMedication" id="myes" value="Yes"><label for="myes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="TakeMedication" id="mno" value="No"><label for="mno">No</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="Whendiagnoused">Time Since Diagnosis <span class="req">*</span></label>
+            <select name="Whendiagnoused" id="Whendiagnoused" required>
+              <option value="">Select duration</option>
+              <option value="<1 Year">Less than 1 year</option>
+              <option value="1 - 5 Years">1 – 5 years</option>
+              <option value=">5 Years">More than 5 years</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Symptoms -->
+      <div class="section-block" id="sec3">
+        <div class="section-label">
+          <div class="section-label-icon">🩺</div>
+          Clinical Symptoms
+        </div>
+        <div class="fields-grid">
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Symptom Severity <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt sev-mild"><input type="radio" name="Severity" id="smild" value="Mild"><label for="smild">🟢 Mild</label></div>
+              <div class="toggle-opt sev-moderate"><input type="radio" name="Severity" id="smod" value="Moderate"><label for="smod">🟡 Moderate</label></div>
+              <div class="toggle-opt sev-severe"><input type="radio" name="Severity" id="ssev" value="Severe"><label for="ssev">🔴 Severe</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Shortness of Breath <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="BreathShortness" id="byes" value="Yes"><label for="byes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="BreathShortness" id="bno" value="No"><label for="bno">No</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Visual Changes <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="VisualChanges" id="vyes" value="Yes"><label for="vyes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="VisualChanges" id="vno" value="No"><label for="vno">No</label></div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Nosebleeds <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="NoseBleeding" id="nyes" value="Yes"><label for="nyes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="NoseBleeding" id="nno" value="No"><label for="nno">No</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Vital Signs -->
+      <div class="section-block" id="sec4">
+        <div class="section-label">
+          <div class="section-label-icon">💉</div>
+          Vital Signs — Blood Pressure
+        </div>
+        <div class="fields-grid">
+          <div class="field">
+            <label for="Systolic">Systolic BP (mmHg) <span class="req">*</span></label>
+            <select name="Systolic" id="Systolic" required>
+              <option value="">Select range</option>
+              <option value="100 - 110">100 – 110 mmHg</option>
+              <option value="111 - 120">111 – 120 mmHg</option>
+              <option value="121 - 130">121 – 130 mmHg</option>
+              <option value="130+">Above 130 mmHg</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="Diastolic">Diastolic BP (mmHg) <span class="req">*</span></label>
+            <select name="Diastolic" id="Diastolic" required>
+              <option value="">Select range</option>
+              <option value="70 - 80">70 – 80 mmHg</option>
+              <option value="81 - 90">81 – 90 mmHg</option>
+              <option value="91 - 100">91 – 100 mmHg</option>
+              <option value="100+">Above 100 mmHg</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Lifestyle -->
+      <div class="section-block" id="sec5">
+        <div class="section-label">
+          <div class="section-label-icon">🥗</div>
+          Lifestyle Factors
+        </div>
+        <div class="fields-grid">
+          <div class="field">
+            <label>Following Controlled Diet <span class="req">*</span></label>
+            <div class="toggle-group">
+              <div class="toggle-opt"><input type="radio" name="ControlledDiet" id="dyes" value="Yes"><label for="dyes">Yes</label></div>
+              <div class="toggle-opt"><input type="radio" name="ControlledDiet" id="dno" value="No"><label for="dno">No</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </form>
+
+    <div class="form-footer">
+      <div class="footer-note">
+        🔒 Data is processed locally. This tool provides decision-support only — not a substitute for professional medical diagnosis.
+      </div>
+      <button class="btn-predict" id="submitBtn" onclick="handleSubmit()">
+        <span class="btn-icon">🧬</span>
+        Analyze & Predict
+      </button>
+    </div>
+  </div>
+
+  <!-- RESULT SECTION -->
+  <div id="result-section">
+    <div class="result-card" id="resultCard">
+      <div class="result-header" id="resultHeader">
+        <span class="result-stage-icon" id="resultIcon">❤️</span>
+        <div class="result-label">HYPERTENSION STAGE PREDICTION</div>
+        <div class="result-stage-name" id="resultStageName">—</div>
+        <div class="result-subtitle" id="resultSubtitle">—</div>
+        <div class="result-metrics">
+          <div class="metric-pill">
+            <div class="metric-icon">🎯</div>
+            <div>
+              <div class="metric-val" id="resultConfidence">—%</div>
+              <div class="metric-lbl">Confidence</div>
+            </div>
+          </div>
+          <div class="metric-pill">
+            <div class="metric-icon">⚡</div>
+            <div>
+              <div class="metric-val">Logistic Regression</div>
+              <div class="metric-lbl">Algorithm</div>
+            </div>
+          </div>
+          <div class="metric-pill">
+            <div class="metric-icon">📊</div>
+            <div>
+              <div class="metric-val">100% Accuracy</div>
+              <div class="metric-lbl">Model Score</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="rec-title">
+          📋 Clinical Recommendations
+          <span class="risk-tag" id="riskTag">—</span>
+        </div>
+        <ul class="rec-list" id="recList"></ul>
+        <button class="btn-reset" onclick="resetForm()">↩ New Assessment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div><strong>Predictive Pulse</strong> — Hypertension Intelligence System v2.0</div>
+    <div>Built with Python, Flask & Scikit-learn · Logistic Regression · 1,825 patient records</div>
+    <div style="margin-top:8px;">⚠️ <em>For educational and decision-support purposes only. Not a substitute for professional medical advice.</em></div>
+  </footer>
+</div>
+
+<script>
+  // Update step indicators as user fills form
+  const sectionIds = ['sec1','sec2','sec3','sec4','sec5'];
+  const steps = document.querySelectorAll('.step');
+
+  function updateSteps() {
+    sectionIds.forEach((id, i) => {
+      const sec = document.getElementById(id);
+      const filled = [...sec.querySelectorAll('select,input[type="radio"]')].some(el =>
+        el.tagName === 'SELECT' ? el.value !== '' : el.checked
+      );
+      steps[i].classList.toggle('done', filled);
+      steps[i].classList.toggle('active', !filled);
+    });
+  }
+
+  document.getElementById('predForm').addEventListener('change', updateSteps);
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 4000);
+  }
+
+  async function handleSubmit() {
+    const form = document.getElementById('predForm');
+
+    // Collect all fields
+    const fields = ['Gender','Age','History','Patient','TakeMedication','Severity',
+                    'BreathShortness','VisualChanges','NoseBleeding','Whendiagnoused',
+                    'Systolic','Diastolic','ControlledDiet'];
+
+    const data = new FormData();
+    let valid = true;
+
+    for (const field of fields) {
+      // Check radio
+      const radio = form.querySelector(`input[name="${field}"]:checked`);
+      const select = form.querySelector(`select[name="${field}"]`);
+      if (radio) {
+        data.append(field, radio.value);
+      } else if (select && select.value) {
+        data.append(field, select.value);
+      } else {
+        showToast(`Please complete: ${field.replace(/([A-Z])/g, ' $1').trim()}`);
+        valid = false;
+        break;
+      }
+    }
+
+    if (!valid) return;
+
+    // Show loader
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('submitBtn').disabled = true;
+
+    try {
+      const res = await fetch('/predict', { method: 'POST', body: data });
+      const json = await res.json();
+
+      if (json.error) {
+        showToast(json.error);
+        return;
+      }
+
+      renderResult(json);
+    } catch (e) {
+      showToast('Network error. Please try again.');
+    } finally {
+      document.getElementById('loadingOverlay').classList.remove('active');
+      document.getElementById('submitBtn').disabled = false;
+    }
+  }
+
+  function renderResult(data) {
+    const color = data.color;
+
+    // Set CSS variable for color theming
+    document.getElementById('resultHeader').style.setProperty('--res-color', color);
+    document.getElementById('resultCard').style.setProperty('--res-color', color);
+    document.getElementById('resultCard').style.border = `1px solid ${color}33`;
+
+    // Fill in values
+    document.getElementById('resultIcon').textContent = data.recommendation.icon;
+    document.getElementById('resultStageName').textContent = data.stage;
+    document.getElementById('resultStageName').style.color = color;
+    document.getElementById('resultSubtitle').textContent = data.recommendation.subtitle;
+    document.getElementById('resultConfidence').textContent = data.confidence + '%';
+
+    const riskTag = document.getElementById('riskTag');
+    riskTag.textContent = data.risk;
+    riskTag.style.color = color;
+    riskTag.style.borderColor = color + '44';
+    riskTag.style.background = color + '18';
+
+    // Recommendations
+    const list = document.getElementById('recList');
+    list.innerHTML = '';
+    data.recommendation.actions.forEach((action, i) => {
+      const li = document.createElement('li');
+      li.textContent = action;
+      li.style.animationDelay = `${i * 0.06}s`;
+      li.style.setProperty('--res-color', color);
+      list.appendChild(li);
+    });
+
+    // Show result section
+    const sec = document.getElementById('result-section');
+    sec.classList.add('visible');
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetForm() {
+    document.getElementById('predForm').reset();
+    document.getElementById('result-section').classList.remove('visible');
+    document.querySelectorAll('.step').forEach((s, i) => {
+      s.className = 'step' + (i === 0 ? ' active' : '');
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
